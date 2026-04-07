@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
+import { useEffect } from "react"
 
 import { AuthShell } from "@/components/auth/auth-shell"
 import { PasswordInput } from "@/components/auth/password-input"
@@ -33,6 +34,13 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard")
+    }
+  }, [status, router])
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -57,10 +65,16 @@ export default function LoginPage() {
       }
 
       toast.success("Logged in successfully")
-      router.push("/dashboard")
+      // Hard redirect to refresh the router and session cache correctly
+      window.location.href = "/dashboard"
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Invalid credentials"))
     }
+  }
+
+  if (status === "loading" || status === "authenticated") {
+    // Show a loading state or nothing while redirecting
+    return null
   }
 
   return (

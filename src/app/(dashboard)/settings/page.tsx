@@ -32,7 +32,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="flex min-h-screen gap-6 p-6">
+        <div className="flex flex-1 gap-6 px-6 py-10">
             {/* LEFT COLUMN - Profile Card & Menus */}
             <div className="w-64 shrink-0 flex flex-col gap-4">
                 {/* Profile Card */}

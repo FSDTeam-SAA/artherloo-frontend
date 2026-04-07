@@ -20,7 +20,7 @@ export default function StudentsManagementPage() {
     const [selectedStudentId, setSelectedStudentId] = React.useState<string | null>(null)
 
     return (
-        <div className="flex h-full min-h-screen">
+        <div className="flex flex-1 overflow-hidden">
             {/* LEFT PANEL - Student List */}
             <div className="flex w-80 shrink-0 flex-col border-r bg-white">
                 <div className="flex items-center justify-end px-4 pb-2 pt-4">
