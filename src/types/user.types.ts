@@ -8,6 +8,7 @@ export interface UserProfile {
     schoolName?: string
     relationWithChildren?: string
     avatar?: string
+    profilePicture?: string
 }
 
 export interface UpdateProfilePayload {

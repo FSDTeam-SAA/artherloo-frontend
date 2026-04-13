@@ -13,7 +13,6 @@ import { getSession } from "next-auth/react";
 axiosInstance.interceptors.request.use(
     async (config) => {
         const session = await getSession();
-        // @ts-ignore - type safe enough based on session format
         const token = session?.user?.accessToken;
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;

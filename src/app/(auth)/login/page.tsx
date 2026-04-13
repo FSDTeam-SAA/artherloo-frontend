@@ -27,14 +27,14 @@ import { getApiErrorMessage } from "@/lib/auth-error"
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  rememberMe: z.boolean().default(false),
+  rememberMe: z.boolean(),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -47,7 +47,7 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
+      rememberMe: true,
     },
   })
 
@@ -133,8 +133,8 @@ export default function LoginPage() {
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(Boolean(checked))}
-                      className="border-[#B1B2F4] data-checked:border-[#6466E9] data-checked:bg-[#6466E9]"
+                      onCheckedChange={() => field.onChange(true)}
+                      className="border-[#B1B2F4] data-checked:border-[#6466E9] data-checked:bg-[#6466E9] data-checked:text-white"
                     />
                   </FormControl>
                   <FormLabel className="text-sm font-medium text-foreground">

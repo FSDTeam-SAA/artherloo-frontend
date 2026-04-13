@@ -15,6 +15,14 @@ import { useAuthStore } from "@/store/auth.store"
 const INITIAL_COUNTDOWN = 59
 
 export default function VerifyOtpPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <VerifyOtpContent />
+    </React.Suspense>
+  )
+}
+
+function VerifyOtpContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const mode = searchParams.get("mode")

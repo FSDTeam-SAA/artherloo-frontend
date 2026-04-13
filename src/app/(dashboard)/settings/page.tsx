@@ -2,16 +2,20 @@
 
 import * as React from "react"
 import { useSession } from "next-auth/react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ChevronRight, KeyRound, Pencil, User } from "lucide-react"
+import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
-import { getProfile } from "@/services/user.service"
+import { getProfile, updateProfileImage } from "@/services/user.service"
 import { ProfileSection } from "@/components/settings/ProfileSection"
 import { PasswordSection } from "@/components/settings/PasswordSection"
+import { getApiErrorMessage } from "@/lib/auth-error"
+import type { UserProfile } from "@/types/user.types"
 
 export default function SettingsPage() {
     const { data: session } = useSession()
+    const queryClient = useQueryClient()
     const [activeSection, setActiveSection] = React.useState<"profile" | "password" | null>(null)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -20,57 +24,102 @@ export default function SettingsPage() {
         queryFn: () => getProfile(),
     })
 
-    // @ts-ignore
-    const profileDetails = profileRes?.data?.data || {}
+    const profileDetails = (profileRes?.data?.data || {}) as Partial<UserProfile>
+    const avatarUrl = profileDetails.profilePicture || profileDetails.avatar
 
     // Fallback to session user details if profile data isn't loaded yet
     const name = session?.user?.name || `${profileDetails.firstName || ""} ${profileDetails.lastName || ""}`.trim() || "User"
     const role = session?.user?.role || profileDetails.role || "teacher"
 
+    const { mutate: uploadAvatar, isPending: isUploadingAvatar } = useMutation({
+        mutationFn: (file: File) => updateProfileImage(file),
+        onSuccess: () => {
+            toast.success("Profile image updated")
+            queryClient.invalidateQueries({ queryKey: ["profile"] })
+        },
+        onError: (error) => {
+            toast.error(getApiErrorMessage(error, "Failed to update profile image"))
+        },
+        onSettled: () => {
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ""
+            }
+        },
+    })
+
     const handleAvatarClick = () => {
         fileInputRef.current?.click()
     }
 
+    const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+
+        if (!file) {
+            return
+        }
+
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please select an image file")
+            event.target.value = ""
+            return
+        }
+
+        uploadAvatar(file)
+    }
+
     return (
-        <div className="flex flex-1 gap-6 px-6 py-10">
+        <div className="flex flex-1 gap-8 bg-[#F8F8FF] px-8 py-10">
             {/* LEFT COLUMN - Profile Card & Menus */}
-            <div className="w-64 shrink-0 flex flex-col gap-4">
+            <div className="flex w-72 shrink-0 flex-col gap-5">
                 {/* Profile Card */}
-                <div className="overflow-hidden rounded-xl bg-white shadow-sm border">
+                <div className="overflow-hidden rounded-lg border bg-white shadow-md shadow-gray-200/70">
                     {/* Banner */}
-                    <div className="h-28 bg-gradient-to-r from-[#6466E9] to-[#B1B2F4]" />
+                    <div className="h-32 bg-gradient-to-r from-[#6466E9] to-[#B1B2F4]" />
 
                     {/* Avatar Section */}
-                    <div className="relative mx-auto -mt-12 h-24 w-24">
+                    <div className="relative mx-auto -mt-14 h-28 w-28">
                         <div className="h-full w-full overflow-hidden rounded-full border-4 border-white bg-gray-200">
-                            {profileDetails.avatar ? (
+                            {avatarUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={profileDetails.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                                <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                             ) : (
                                 <div className="flex h-full w-full flex-col items-center justify-center text-gray-400">
                                     <User className="size-8" />
                                 </div>
                             )}
+                            {isUploadingAvatar ? (
+                                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-xs font-medium text-white">
+                                    Uploading...
+                                </div>
+                            ) : null}
                         </div>
 
                         <button
                             className="absolute bottom-0 right-0 flex size-7 items-center justify-center rounded-full bg-[#6466E9] text-white hover:bg-[#5254d4] transition-colors"
                             onClick={handleAvatarClick}
+                            disabled={isUploadingAvatar}
                         >
                             <Pencil className="size-3.5" />
                         </button>
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            disabled={isUploadingAvatar}
+                        />
                     </div>
 
-                    <div className="px-4 pb-4 pt-2 text-center">
-                        <h3 className="font-orbitron font-semibold text-[#6466E9]">{name}</h3>
-                        <p className="font-sans text-sm capitalize text-gray-400">{role}</p>
+                    <div className="px-6 pb-7 pt-4 text-center">
+                        <h3 className="font-orbitron text-lg font-semibold text-[#6466E9]">{name}</h3>
+                        <p className="mt-1 font-sans text-sm capitalize text-gray-400">{role}</p>
                     </div>
 
                     <hr className="border-gray-100" />
 
                     {/* Info List */}
-                    <div className="p-4 space-y-2 font-sans text-sm text-gray-600">
+                    <div className="space-y-3 px-6 pb-10 pt-6 font-sans text-sm text-gray-600">
                         <p><span className="font-medium text-gray-900">Name:</span> {profileDetails.firstName || ""} {profileDetails.lastName || ""}</p>
                         <p><span className="font-medium text-gray-900">Email:</span> {profileDetails.email || session?.user?.email || ""}</p>
                         <p><span className="font-medium text-gray-900">Phone:</span> {profileDetails.phoneNumber || ""}</p>

@@ -40,7 +40,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>
 
 interface ProfileSectionProps {
-    profile: UserProfile
+    profile: Partial<UserProfile>
     role: "teacher" | "parent"
 }
 
